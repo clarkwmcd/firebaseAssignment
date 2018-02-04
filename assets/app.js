@@ -1,13 +1,3 @@
-// Steps to complete:
-/*
-1. Initialize Firebase
-2. Create button for adding new employees - then update the html + update the database
-3. Create a way to retrieve employees from the employee database.
-4. Create a way to calculate the months worked. Using difference between start and current time. Then use moment.js formatting to set difference in months.
-5. Calculate Total billed
-
-*/
-// 1. Initialize Firebase
 var config = {
   apiKey: "AIzaSyCrqC8zTcmvXFRm71wyX7fbm3Hscfosdks",
   authDomain: "train-schedule-f1f70.firebaseapp.com",
@@ -20,71 +10,60 @@ firebase.initializeApp(config);
 
 var database = firebase.database();
 
+$("#addTrainBtn").on("click", function() {
 
-// 2. Button for adding Employees
-$("#addTrainBtn").on("click", function(){
+  var trainName = $("#trainNameInput").val().trim();
+  var dest = $("#destinationInput").val().trim();
+  var firstTrain = moment($("#firstTrainInput").val().trim(), "HH:mm").format("X");
+  var freq = $("#frequencyInput").val().trim();
 
-    // Grabs user input
-    var trainName = $("#trainNameInput").val().trim();
-    var dest = $("#destinationInput").val().trim();
-    var firstTrain = moment($("#firstTrainInput").val().trim(), "HH:mm").format("X");
-    var freq = $("#frequencyInput").val().trim();
+  var newTrain = {
+    name: trainName,
+    dest: dest,
+    start: firstTrain,
+    frequency: freq
+  }
 
-    // Creates local "temporary" object for holding employee data
-    var newTrain = {
-        name:  trainName,
-        dest: dest,
-        start: firstTrain,
-        frequency: freq
-    }
+  database.ref().push(newTrain);
 
-    // Uploads employee data to the database
-    database.ref().push(newTrain);
-    // Logs everything to console
-    console.log(newTrain.name);
-    console.log(newTrain.dest);
-    console.log(newTrain.start);
-    console.log(newTrain.frequency);
+  alert(trainName + "successfully added");
 
-    // Alert
-    alert("Employee successfully added");
+  $("#trainNameInput").val("");
+  $("#destinationInput").val("");
+  $("#firstTrainInput").val("");
+  $("#frequencyInput").val("");
 
-    // Clears all of the text-boxes
-    $("#trainNameInput").val("");
-    $("#destinationInput").val("");
-    $("#firstTrainInput").val("");
-    $("#frequencyInput").val("");
-
-    // Prevents moving to new page
-    return false;
+  return false;
 });
 
 
-// 3. Create Firebase event for adding employee to the database and a row in the html when a user adds an entry
-database.ref().on("child_added", function(childSnapshot, prevChildKey){
 
-    console.log(childSnapshot.val());
+database.ref().on("child_added", function(childSnapshot, prevChildKey) {
 
-    // Store everything into a variable.
-    var trainName = childSnapshot.val().name;
-    var trainDest = childSnapshot.val().dest;
-    var trainStart = childSnapshot.val().start;
-    var trainFreq = childSnapshot.val().frequency;
+  var trainName = childSnapshot.val().name;
+  var trainDest = childSnapshot.val().dest;
+  var trainStart = childSnapshot.val().start;
+  var trainFreq = childSnapshot.val().frequency;
 
-    console.log(trainName);
-    console.log(trainDest);
-    console.log(trainStart);
-    console.log(trainFreq);
+  var trainStartConverted = moment(trainStart, "hh:mm").subtract(1, "years");
+  var currentTime = moment().format("hh:mm");
+  var diffTime = moment().diff(moment(trainStartConverted), "minutes");
+  var remainder = diffTime % trainFreq;
+  var minutesUntilTrain = trainFreq - remainder;
+  var nextTrainArrival = moment().add(minutesUntilTrain, "minutes").format("hh:mm");
 
-    var trainStartConverted = moment(trainStart, "hh:mm").subtract(1, "years");
-    var currentTime = moment().format("hh:mm");
-    var diffTime = moment().diff(moment(trainStartConverted), "minutes");
-    var remainder = diffTime % trainFreq;
-    var minutesUntilTrain = trainFreq - remainder;
-    var nextTrainArrival = moment().add(minutesUntilTrain, "minutes").format("hh:mm");
+  $("#trainTable > tbody").append("<tr><td>" + trainName + "</td><td>" + trainDest + "</td><td>" + trainFreq + "</td><td class='update-nextTrainArrival'>" + nextTrainArrival + "</td><td class='update-minutesUntilTrain'>" + minutesUntilTrain + "</td></tr>");
+
+});
+
+database.ref().on("value", function(snapshot) {
+
+  $("#click-value").text(snapshot.val().clickCount);
+
+  clickCounter = snapshot.val().clickCount;
+
+}, function(errorObject) {
 
 
-    // Add each train's data into the table
-    $("#trainTable > tbody").append("<tr><td>" + trainName + "</td><td>" + trainDest + "</td><td>" + trainFreq + "</td><td>" + nextTrainArrival  + "</td><td>" + minutesUntilTrain + "</td></tr>");
-
+  console.log("The read failed: " + errorObject.code);
 });

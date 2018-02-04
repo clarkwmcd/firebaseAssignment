@@ -26,8 +26,6 @@ $("#addTrainBtn").on("click", function() {
 
   database.ref().push(newTrain);
 
-  alert(trainName + "successfully added");
-
   $("#trainNameInput").val("");
   $("#destinationInput").val("");
   $("#firstTrainInput").val("");
